@@ -1,14 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { WebhookServiceModule } from './../src/webhook-service.module';
+import { WebhookModule } from './../src/webhook.module';
 
-describe('WebhookServiceController (e2e)', () => {
+describe('WebhookController (e2e)', () => {
   let app: INestApplication;
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [WebhookServiceModule],
+      imports: [WebhookModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
