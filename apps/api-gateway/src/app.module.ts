@@ -3,8 +3,14 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import {
+  PrometheusModule,
+  makeCounterProvider,
+  makeHistogramProvider,
+} from '@willsoto/nestjs-prometheus';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { MetricsController } from './metrics.controller';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { ProxyService } from './proxy/proxy.service';
 
@@ -25,6 +31,9 @@ import { ProxyService } from './proxy/proxy.service';
         limit: 100,
       },
     ]),
+    PrometheusModule.register({
+      controller: MetricsController,
+    }),
   ],
   controllers: [AppController],
   providers: [
@@ -35,6 +44,17 @@ import { ProxyService } from './proxy/proxy.service';
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
+    makeCounterProvider({
+      name: 'http_requests_total',
+      help: 'Total number of HTTP requests',
+      labelNames: ['method', 'path', 'status'],
+    }),
+    makeHistogramProvider({
+      name: 'http_request_duration_ms',
+      help: 'HTTP request duration in milliseconds',
+      labelNames: ['method', 'path'],
+      buckets: [10, 50, 100, 200, 500, 1000],
+    }),
   ],
 })
 export class AppModule {}
