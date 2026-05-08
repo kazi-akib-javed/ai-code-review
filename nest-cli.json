@@ -1,8 +1,77 @@
 {
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
-  "sourceRoot": "src",
+  "sourceRoot": "apps/api-gateway/src",
   "compilerOptions": {
-    "deleteOutDir": true
+    "deleteOutDir": true,
+    "webpack": true,
+    "tsConfigPath": "apps/api-gateway/tsconfig.app.json"
+  },
+  "monorepo": true,
+  "root": "apps/api-gateway",
+  "projects": {
+    "api-gateway": {
+      "type": "application",
+      "root": "apps/api-gateway",
+      "entryFile": "main",
+      "sourceRoot": "apps/api-gateway/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/api-gateway/tsconfig.app.json"
+      }
+    },
+    "webhook": {
+      "type": "application",
+      "root": "apps/webhook",
+      "entryFile": "main",
+      "sourceRoot": "apps/webhook/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/webhook/tsconfig.app.json"
+      }
+    },
+    "auth-service": {
+      "type": "application",
+      "root": "apps/auth-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/auth-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/auth-service/tsconfig.app.json"
+      }
+    },
+    "review-query-service": {
+      "type": "application",
+      "root": "apps/review-query-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/review-query-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/review-query-service/tsconfig.app.json"
+      }
+    },
+    "ai-review-worker": {
+      "type": "application",
+      "root": "apps/ai-review-worker",
+      "entryFile": "main",
+      "sourceRoot": "apps/ai-review-worker/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/ai-review-worker/tsconfig.app.json"
+      }
+    },
+    "notification-worker": {
+      "type": "application",
+      "root": "apps/notification-worker",
+      "entryFile": "main",
+      "sourceRoot": "apps/notification-worker/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/notification-worker/tsconfig.app.json"
+      }
+    },
+    "shared": {
+      "type": "library",
+      "root": "libs/shared",
+      "entryFile": "index",
+      "sourceRoot": "libs/shared/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/shared/tsconfig.lib.json"
+      }
+    }
   }
 }

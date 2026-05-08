@@ -1,0 +1,52 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
+
+jobs:
+  deploy:
+    name: Deploy to production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build all services
+        run: |
+          yarn nest build shared
+          yarn nest build api-gateway
+          yarn nest build auth-service
+          yarn nest build webhook-service
+          yarn nest build review-query-service
+          yarn nest build ai-review-worker
+          yarn nest build notification-worker
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            cd /app/ai-code-review
+            git pull origin main
+            yarn install --frozen-lockfile
+            yarn nest build shared
+            yarn nest build api-gateway
+            yarn nest build auth-service
+            yarn nest build webhook-service
+            yarn nest build review-query-service
+            yarn nest build ai-review-worker
+            yarn nest build notification-worker
+            pm2 restart all
