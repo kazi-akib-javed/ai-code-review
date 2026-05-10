@@ -19,13 +19,13 @@
         "tsConfigPath": "apps/api-gateway/tsconfig.app.json"
       }
     },
-    "webhook": {
+    "webhook-service": {
       "type": "application",
-      "root": "apps/webhook",
+      "root": "apps/webhook-service",
       "entryFile": "main",
-      "sourceRoot": "apps/webhook/src",
+      "sourceRoot": "apps/webhook-service/src",
       "compilerOptions": {
-        "tsConfigPath": "apps/webhook/tsconfig.app.json"
+        "tsConfigPath": "apps/webhook-service/tsconfig.app.json"
       }
     },
     "auth-service": {
