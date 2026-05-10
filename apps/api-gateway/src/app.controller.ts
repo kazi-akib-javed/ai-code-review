@@ -27,7 +27,6 @@ export class AppController {
   constructor(private readonly proxyService: ProxyService) {}
 
   @Post('auth/register')
-  @ApiTags('Auth')
   @ApiOperation({ summary: 'Register a new user' })
   @ApiBody({
     schema: {
@@ -41,13 +40,12 @@ export class AppController {
   @ApiResponse({ status: 201, description: 'User registered successfully' })
   @ApiResponse({ status: 409, description: 'Email already registered' })
   async register(@Body() body: unknown, @Res() res: Response) {
-    const data = await this.proxyService.forward('auth', 'auth/register', 'POST', body);
+    const data = await this.proxyService.forward('auth', 'auth/register', 'POST', null, body);
     return res.json(data);
   }
 
   @Post('auth/login')
   @HttpCode(200)
-  @ApiTags('Auth')
   @ApiOperation({ summary: 'Login with email and password' })
   @ApiBody({
     schema: {
@@ -57,32 +55,24 @@ export class AppController {
       },
     },
   })
-  @ApiResponse({ status: 200, description: 'Login successful, returns JWT token' })
+  @ApiResponse({ status: 200, description: 'Returns JWT access token' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(@Body() body: unknown, @Res() res: Response) {
-    const data = await this.proxyService.forward('auth', 'auth/login', 'POST', body);
+    const data = await this.proxyService.forward('auth', 'auth/login', 'POST', null, body);
     return res.json(data);
   }
 
   @Post('auth/refresh')
   @HttpCode(200)
-  @ApiTags('Auth')
   @ApiOperation({ summary: 'Refresh access token using refresh token cookie' })
   @ApiResponse({ status: 200, description: 'New access token returned' })
   async refresh(@Req() req: Request, @Res() res: Response) {
-    const data = await this.proxyService.forward(
-      'auth',
-      'auth/refresh',
-      'POST',
-      {},
-      { cookie: req.headers.cookie },
-    );
+    const data = await this.proxyService.forward('auth', 'auth/refresh', 'POST', req);
     return res.json(data);
   }
 
   @Post('auth/logout')
   @HttpCode(200)
-  @ApiTags('Auth')
   @ApiOperation({ summary: 'Logout and clear refresh token cookie' })
   @ApiResponse({ status: 200, description: 'Logged out successfully' })
   async logout(@Res() res: Response) {
@@ -106,6 +96,7 @@ export class AppController {
       'webhook',
       'webhooks/github',
       'POST',
+      null,
       body,
       {
         'x-hub-signature-256': signature,
@@ -123,13 +114,7 @@ export class AppController {
   @ApiResponse({ status: 200, description: 'List of repositories' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getRepositories(@Req() req: Request, @Res() res: Response) {
-    const data = await this.proxyService.forward(
-      'reviewQuery',
-      'repositories',
-      'GET',
-      undefined,
-      { authorization: req.headers.authorization },
-    );
+    const data = await this.proxyService.forward('reviewQuery', 'repositories', 'GET', req);
     return res.json(data);
   }
 
@@ -149,8 +134,7 @@ export class AppController {
       'reviewQuery',
       `repositories/${id}/pull-requests`,
       'GET',
-      undefined,
-      { authorization: req.headers.authorization },
+      req,
     );
     return res.json(data);
   }
@@ -171,8 +155,7 @@ export class AppController {
       'reviewQuery',
       `pull-requests/${prId}/review`,
       'GET',
-      undefined,
-      { authorization: req.headers.authorization },
+      req,
     );
     return res.json(data);
   }
@@ -193,8 +176,7 @@ export class AppController {
       'reviewQuery',
       `repositories/${id}/stats`,
       'GET',
-      undefined,
-      { authorization: req.headers.authorization },
+      req,
     );
     return res.json(data);
   }

@@ -1,22 +1,19 @@
-import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { ReviewQueryService } from './review-query.service';
-import { AuthenticatedRequest } from '@app/shared';
+import { UserId } from './decorators/user-id.decorator';
 
 @Controller()
 export class ReviewQueryController {
   constructor(private readonly reviewQueryService: ReviewQueryService) {}
 
   @Get('repositories')
-  getRepositories(@Req() req: AuthenticatedRequest) {
-    return this.reviewQueryService.getRepositories(req.user.sub);
+  getRepositories(@UserId() userId: string) {
+    return this.reviewQueryService.getRepositories(userId);
   }
 
   @Get('repositories/:id/pull-requests')
-  getPullRequests(
-    @Param('id') id: string,
-    @Req() req: AuthenticatedRequest,
-  ) {
-    return this.reviewQueryService.getPullRequests(id, req.user.sub);
+  getPullRequests(@Param('id') id: string, @UserId() userId: string) {
+    return this.reviewQueryService.getPullRequests(id, userId);
   }
 
   @Get('pull-requests/:prId/review')
@@ -25,10 +22,7 @@ export class ReviewQueryController {
   }
 
   @Get('repositories/:id/stats')
-  getRepositoryStats(
-    @Param('id') id: string,
-    @Req() req: AuthenticatedRequest,
-  ) {
-    return this.reviewQueryService.getRepositoryStats(id, req.user.sub);
+  getRepositoryStats(@Param('id') id: string, @UserId() userId: string) {
+    return this.reviewQueryService.getRepositoryStats(id, userId);
   }
 }
