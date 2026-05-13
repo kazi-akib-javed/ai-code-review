@@ -76,6 +76,7 @@ export class WebhookService {
     await this.reviewRepository.save(review);
 
     const message: ReviewRequestedDto = {
+      reviewId: review.id,
       prNumber: dto.number,
       repoFullName: dto.repository.full_name,
       installationId: dto.installation.id.toString(),
