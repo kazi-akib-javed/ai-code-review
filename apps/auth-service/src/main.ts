@@ -16,7 +16,9 @@ async function bootstrap() {
     }),
   );
 
-  app.setGlobalPrefix('api/v1');
+  app.setGlobalPrefix('api/v1', {
+    exclude: ['metrics'],
+  });
 
   const port = process.env.AUTH_SERVICE_PORT || 3001;
   await app.listen(port);

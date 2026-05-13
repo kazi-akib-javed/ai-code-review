@@ -13,7 +13,9 @@ async function bootstrap() {
     }),
   );
 
-  app.setGlobalPrefix('api/v1');
+  app.setGlobalPrefix('api/v1' ,{
+    exclude: ['metrics'],
+  });
 
   const port = process.env.WEBHOOK_SERVICE_PORT || 3002;
   await app.listen(port);

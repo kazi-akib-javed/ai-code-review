@@ -10,6 +10,7 @@ import {
   ReviewEntity,
   ReviewCommentEntity,
 } from '@app/shared';
+import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 
 @Module({
   imports: [
@@ -40,6 +41,10 @@ import {
       ReviewEntity,
       ReviewCommentEntity,
     ]),
+    PrometheusModule.register({
+      path: '/metrics',
+      defaultMetrics: { enabled: true },
+    }),
   ],
   controllers: [ReviewQueryController],
   providers: [ReviewQueryService],

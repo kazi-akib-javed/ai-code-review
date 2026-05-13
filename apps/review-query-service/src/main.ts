@@ -13,7 +13,9 @@ async function bootstrap() {
     }),
   );
 
-  app.setGlobalPrefix('api/v1');
+  app.setGlobalPrefix('api/v1', {
+    exclude: ['metrics'],
+  });
 
   const port = process.env.REVIEW_QUERY_SERVICE_PORT || 3003;
   await app.listen(port);

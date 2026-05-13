@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
@@ -10,9 +10,9 @@ import {
 } from '@willsoto/nestjs-prometheus';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { MetricsController } from './metrics.controller';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { ProxyService } from './proxy/proxy.service';
+import { MetricsMiddleware } from './metrics.middleware';
 
 @Module({
   imports: [
@@ -32,7 +32,10 @@ import { ProxyService } from './proxy/proxy.service';
       },
     ]),
     PrometheusModule.register({
-      controller: MetricsController,
+      path: '/metrics',
+      defaultMetrics: {
+        enabled: true,
+      },
     }),
   ],
   controllers: [AppController],
@@ -57,4 +60,8 @@ import { ProxyService } from './proxy/proxy.service';
     }),
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(MetricsMiddleware).forRoutes('*');
+  }
+}
