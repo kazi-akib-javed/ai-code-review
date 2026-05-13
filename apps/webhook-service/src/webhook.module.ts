@@ -11,6 +11,7 @@ import {
   ReviewEntity,
   RABBITMQ_QUEUES,
 } from '@app/shared';
+import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 
 @Module({
   imports: [
@@ -50,6 +51,10 @@ import {
         inject: [ConfigService],
       },
     ]),
+    PrometheusModule.register({
+      path: '/metrics',
+      defaultMetrics: { enabled: true },
+    }),
   ],
   controllers: [WebhookController],
   providers: [WebhookService],

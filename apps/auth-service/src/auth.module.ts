@@ -8,6 +8,7 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 import { UserEntity } from '@app/shared';
+import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 
 @Module({
   imports: [
@@ -35,6 +36,10 @@ import { UserEntity } from '@app/shared';
         signOptions: { expiresIn: config.get('JWT_ACCESS_EXPIRES_IN') },
       }),
       inject: [ConfigService],
+    }),
+    PrometheusModule.register({
+      path: '/metrics',
+      defaultMetrics: { enabled: true },
     }),
   ],
   controllers: [AuthController],
