@@ -1,99 +1,179 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# AI Code Review Platform
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+An AI-powered code review platform that automatically reviews pull requests using LLM and posts feedback directly on GitHub.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Demo
 
-## Description
+Open a PR → webhook fires → AI fetches the diff → reviews it → posts inline comments back to GitHub and shows results in real time on the dashboard.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+![Dashboard](https://via.placeholder.com/800x400?text=Dashboard+Screenshot)
 
-## Project setup
+## Architecture
+GitHub PR → Webhook Service → RabbitMQ → AI Review Worker → Groq LLM
+↓
+PostgreSQL
+↓
+Notification Worker → Socket.io → Next.js Dashboard
+### Services
 
+| Service | Port | Responsibility |
+|---|---|---|
+| API Gateway | 3000 | Auth, rate limiting, proxy, Swagger |
+| Auth Service | 3001 | JWT, refresh tokens, bcrypt |
+| Webhook Service | 3002 | GitHub HMAC validation, RabbitMQ publish |
+| Review Query Service | 3003 | REST endpoints for reviews and stats |
+| AI Review Worker | 3004 | Consume queue, fetch diff, call LLM, persist |
+| Notification Worker | 3005 | RabbitMQ consumer, Socket.io real-time push |
+| Next.js Frontend | 3006 | Dashboard, repositories, PR reviews |
+
+## Tech Stack
+
+**Backend**
+- NestJS monorepo with 6 microservices
+- TypeORM + PostgreSQL
+- RabbitMQ for async message passing
+- Redis for sessions
+- Socket.io for real-time updates
+- Passport JWT with refresh token rotation
+- Prometheus + Grafana for observability
+
+**Frontend**
+- Next.js 14 App Router
+- Tailwind CSS
+- Zustand for auth state
+- React Query for server state
+- Socket.io client for real-time updates
+
+**Infrastructure**
+- Docker Compose for local development
+- GitHub Actions CI/CD
+- ngrok for webhook tunneling in development
+
+## Design Decisions
+
+**Why RabbitMQ over direct HTTP calls?**
+AI review processing can take 5-30 seconds. Doing this synchronously in the webhook handler would time out GitHub's webhook delivery. RabbitMQ decouples the webhook receipt from the processing — we acknowledge the webhook immediately and process asynchronously.
+
+**Why DDD with separate services?**
+Each service has a single bounded context. The webhook service only cares about receiving and validating events. The AI worker only cares about processing reviews. This makes each service independently deployable and testable.
+
+**Why refresh token rotation?**
+Access tokens expire in 15 minutes. Refresh tokens are stored in HttpOnly cookies (not localStorage) making them inaccessible to XSS attacks. On every refresh, a new refresh token is issued (rotation) so stolen tokens can be detected.
+
+**Why Prometheus + Grafana?**
+Queue depth, review processing latency, and Claude API latency are the three metrics that matter most for this system. Grafana gives a live view of pipeline health that can be shown during demos.
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 22+
+- Docker + Docker Compose
+- ngrok account (free)
+- Groq API key (free at console.groq.com)
+- GitHub App
+
+### Setup
+
+**1. Clone the repo**
 ```bash
-$ yarn install
+git clone https://github.com/kazi-akib-javed/ai-code-review.git
+cd ai-code-review
 ```
 
-## Compile and run the project
-
+**2. Install dependencies**
 ```bash
-# development
-$ yarn run start
-
-# watch mode
-$ yarn run start:dev
-
-# production mode
-$ yarn run start:prod
+yarn install
 ```
 
-## Run tests
-
+**3. Configure environment**
 ```bash
-# unit tests
-$ yarn run test
-
-# e2e tests
-$ yarn run test:e2e
-
-# test coverage
-$ yarn run test:cov
+cp .env.example .env
 ```
 
-## Deployment
+Fill in `.env`:
+- `CLAUDE_API_KEY` — your Groq API key from console.groq.com
+- `GITHUB_APP_ID` — from your GitHub App settings
+- `GITHUB_APP_PRIVATE_KEY` — contents of the downloaded .pem file
+- `GITHUB_WEBHOOK_SECRET` — random secret set in your GitHub App
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
+**4. Start infrastructure**
 ```bash
-$ yarn install -g mau
-$ mau deploy
+docker compose up -d
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+**5. Start all services**
+```bash
+yarn start:all
+```
 
-## Resources
+**6. Start frontend**
+```bash
+yarn start:frontend
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+**7. Tunnel webhook service**
+```bash
+ngrok http 3002
+```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+Set the ngrok URL + `/api/v1/webhooks/github` as your GitHub App webhook URL.
 
-## Support
+### Access
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+| Service | URL |
+|---|---|
+| Frontend | http://localhost:3006 |
+| Swagger API docs | http://localhost:3000/api/docs |
+| RabbitMQ management | http://localhost:15672 |
+| Prometheus | http://localhost:9090 |
+| Grafana | http://localhost:3100 |
 
-## Stay in touch
+## Git Workflow
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+This project follows trunk-based development with conventional commits.
 
-## License
+**Branch naming:** `feat/`, `fix/`, `chore/`, `refactor/`, `test/`
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+**Commit format:** `type(scope): description`
+
+**Examples:**
+feat(ai-worker): integrate Groq API for diff analysis
+fix(webhook-svc): correct tsconfig outDir path
+chore(infra): add prometheus scrape config
+
+**Flow:** `feat/*` → `develop` (squash merge) → `main` (merge commit + tag)
+
+## API Documentation
+
+Swagger UI available at `http://localhost:3000/api/docs`
+
+Endpoints:
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/login`
+- `POST /api/v1/auth/refresh`
+- `POST /api/v1/auth/logout`
+- `GET /api/v1/repositories`
+- `GET /api/v1/repositories/:id/pull-requests`
+- `GET /api/v1/pull-requests/:prId/review`
+- `GET /api/v1/repositories/:id/stats`
+- `POST /api/v1/webhooks/github`
+
+## CI/CD
+
+GitHub Actions runs on every push to `develop` and `main`:
+
+1. **Lint** — ESLint across all apps
+2. **Test** — Jest unit tests with coverage
+3. **Build** — Compile all 6 NestJS services
+
+Deployment via SSH on push to `main`.
+
+## Releases
+
+| Version | Description |
+|---|---|
+| v0.4.0 | Full end-to-end pipeline with GitHub bot comments |
+| v0.3.0 | Next.js frontend with real-time Socket.io |
+| v0.2.0 | API gateway, Swagger, Prometheus metrics |
+| v0.1.0 | Backend services complete |
