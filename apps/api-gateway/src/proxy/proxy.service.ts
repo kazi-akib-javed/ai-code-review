@@ -40,7 +40,7 @@ export class ProxyService {
       if (req.headers.cookie) {
         headers['cookie'] = req.headers.cookie;
       }
-      const user = req.user;
+      const user = req?.['user'] as JwtPayload;
       if (user['sub']) {
         headers['x-user-id'] = user['sub'];
       }
