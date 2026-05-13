@@ -2,8 +2,11 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { WebhookController } from './webhook.controller';
 import { WebhookService } from './webhook.service';
+import { GithubCallbackController } from './github-callback.controller';
+import { GithubCallbackService } from './github-callback.service';
 import {
   UserEntity,
   RepositoryEntity,
@@ -11,7 +14,6 @@ import {
   ReviewEntity,
   RABBITMQ_QUEUES,
 } from '@app/shared';
-import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 
 @Module({
   imports: [
@@ -56,7 +58,7 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
       defaultMetrics: { enabled: true },
     }),
   ],
-  controllers: [WebhookController],
-  providers: [WebhookService],
+  controllers: [WebhookController, GithubCallbackController],
+  providers: [WebhookService, GithubCallbackService],
 })
 export class WebhookModule {}

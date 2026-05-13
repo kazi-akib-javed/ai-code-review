@@ -4,8 +4,23 @@ import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import api from '@/lib/axios';
 import { Repository } from '@/types';
+import { useEffect, useState } from 'react';
 
 export default function RepositoriesPage() {
+  const [userId, setUserId] = useState<string>('');
+
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        setUserId(payload.sub);
+      } catch {
+        // ignore
+      }
+    }
+  }, []);
+
   const { data: repositories, isLoading } = useQuery({
     queryKey: ['repositories'],
     queryFn: async () => {
@@ -24,11 +39,21 @@ export default function RepositoriesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">Repositories</h2>
-        <p className="text-gray-600 mt-1">
-          Manage your connected GitHub repositories
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Repositories</h2>
+          <p className="text-gray-600 mt-1">
+            Manage your connected GitHub repositories
+          </p>
+        </div>
+        <a
+          href={`https://github.com/apps/${process.env.NEXT_PUBLIC_GITHUB_APP_NAME}/installations/new?state=${userId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 font-medium text-sm"
+        >
+          Install GitHub App
+        </a>
       </div>
 
       {repositories?.length === 0 ? (
@@ -37,11 +62,11 @@ export default function RepositoriesPage() {
             No repositories connected
           </h3>
           <p className="text-gray-500 text-sm mb-6">
-            Install the GitHub App on your repositories to start getting AI
-            code reviews.
+            Install the GitHub App on your repositories to start getting AI code
+            reviews automatically.
           </p>
           <a
-            href={`https://github.com/apps/${process.env.NEXT_PUBLIC_GITHUB_APP_NAME}/installations/new`}
+            href={`https://github.com/apps/${process.env.NEXT_PUBLIC_GITHUB_APP_NAME}/installations/new?state=${userId}`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 font-medium text-sm"

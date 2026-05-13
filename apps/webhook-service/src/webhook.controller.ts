@@ -19,10 +19,12 @@ export class WebhookController {
   @UseGuards(GithubWebhookGuard)
   async handleGithubWebhook(
     @Headers('x-github-event') event: string,
-    @Body() body: GithubPullRequestWebhookDto,
+    @Body() body: unknown,
   ) {
     if (event === 'pull_request') {
-      return this.webhookService.handlePullRequestEvent(body);
+      return this.webhookService.handlePullRequestEvent(
+        body as GithubPullRequestWebhookDto,
+      );
     }
 
     return { ignored: true };
