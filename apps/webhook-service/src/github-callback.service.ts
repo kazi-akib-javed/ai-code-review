@@ -65,7 +65,7 @@ export class GithubCallbackService {
 
   private async fetchInstallationRepos(
     installationId: string,
-    user: UserEntity,
+    _user: UserEntity,
   ): Promise<{ id: number; full_name: string }[]> {
     const token = await this.getInstallationToken(installationId);
 
