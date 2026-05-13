@@ -33,9 +33,9 @@ export class GithubCallbackService {
 
     this.logger.log(`User found: ${user.email}`);
 
-    let repos;
+    let repos: string | any[];
     try {
-      repos = await this.fetchInstallationRepos(installationId, user);
+      repos = await this.fetchInstallationRepos(installationId);
       this.logger.log(`Fetched ${repos.length} repos from GitHub`);
     } catch (error) {
       this.logger.error(`Failed to fetch repos: ${error.message}`);
@@ -65,7 +65,6 @@ export class GithubCallbackService {
 
   private async fetchInstallationRepos(
     installationId: string,
-    _user: UserEntity,
   ): Promise<{ id: number; full_name: string }[]> {
     const token = await this.getInstallationToken(installationId);
 
