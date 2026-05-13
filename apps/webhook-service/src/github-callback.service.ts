@@ -1,7 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { RepositoryEntity, UserEntity } from '@app/shared';
+import {
+  RepositoryEntity,
+  UserEntity,
+  PrStatus,
+  PullRequestEntity,
+} from '@app/shared';
 
 @Injectable()
 export class GithubCallbackService {
@@ -12,6 +17,8 @@ export class GithubCallbackService {
     private readonly repositoryRepository: Repository<RepositoryEntity>,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
+    @InjectRepository(PullRequestEntity)
+    private readonly pullRequestRepository: Repository<PullRequestEntity>,
   ) {}
 
   async handleInstallation(
@@ -33,7 +40,7 @@ export class GithubCallbackService {
 
     this.logger.log(`User found: ${user.email}`);
 
-    let repos: string | any[];
+    let repos;
     try {
       repos = await this.fetchInstallationRepos(installationId);
       this.logger.log(`Fetched ${repos.length} repos from GitHub`);
@@ -43,23 +50,29 @@ export class GithubCallbackService {
     }
 
     for (const repo of repos) {
-      const existing = await this.repositoryRepository.findOne({
+      let repoEntity = await this.repositoryRepository.findOne({
         where: { githubRepoId: repo.id.toString() },
       });
 
-      if (!existing) {
-        const newRepo = this.repositoryRepository.create({
+      if (!repoEntity) {
+        repoEntity = this.repositoryRepository.create({
           fullName: repo.full_name,
           githubRepoId: repo.id.toString(),
           isActive: true,
           installationId,
           userId,
         });
-        await this.repositoryRepository.save(newRepo);
+        await this.repositoryRepository.save(repoEntity);
         this.logger.log(`Registered repository: ${repo.full_name}`);
       } else {
         this.logger.log(`Repository already exists: ${repo.full_name}`);
       }
+
+      await this.backfillOpenPullRequests(
+        repo.full_name,
+        repoEntity.id,
+        installationId,
+      );
     }
   }
 
@@ -136,5 +149,60 @@ export class GithubCallbackService {
     const signature = sign.sign(privateKey, 'base64url');
 
     return `${header}.${body}.${signature}`;
+  }
+
+  private async backfillOpenPullRequests(
+    repoFullName: string,
+    repositoryId: string,
+    installationId: string,
+  ): Promise<void> {
+    this.logger.log(`Backfilling open PRs for ${repoFullName}`);
+
+    try {
+      const token = await this.getInstallationToken(installationId);
+
+      const response = await fetch(
+        `https://api.github.com/repos/${repoFullName}/pulls?state=open&per_page=20`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/vnd.github.v3+json',
+            'X-GitHub-Api-Version': '2022-11-28',
+          },
+        },
+      );
+
+      if (!response.ok) {
+        this.logger.warn(
+          `Failed to fetch PRs for ${repoFullName}: ${response.status}`,
+        );
+        return;
+      }
+
+      const prs = await response.json();
+      this.logger.log(`Found ${prs.length} open PRs for ${repoFullName}`);
+
+      for (const pr of prs) {
+        const existing = await this.pullRequestRepository.findOne({
+          where: { prNumber: pr.number, repositoryId },
+        });
+
+        if (!existing) {
+          const newPr = this.pullRequestRepository.create({
+            prNumber: pr.number,
+            title: pr.title,
+            authorUsername: pr.user.login,
+            headSha: pr.head.sha,
+            baseSha: pr.base.sha,
+            status: PrStatus.OPEN,
+            repositoryId,
+          });
+          await this.pullRequestRepository.save(newPr);
+          this.logger.log(`Backfilled PR #${pr.number}: ${pr.title}`);
+        }
+      }
+    } catch (error) {
+      this.logger.error(`Failed to backfill PRs: ${error.message}`);
+    }
   }
 }

@@ -111,14 +111,16 @@ export class AppController {
 
     if (installationId && userId && setupAction === 'install') {
       try {
-        await fetch(
+        const resp = await fetch(
           `http://localhost:${process.env.WEBHOOK_SERVICE_PORT || 3002}/api/v1/github/callback?installation_id=${installationId}&setup_action=${setupAction}`,
           {
             headers: { 'x-user-id': userId },
           },
         );
+        const text = await resp.text();
+        console.log('Webhook callback status:', resp.status, text);
       } catch (error) {
-        console.error('Callback error:', error);
+        console.error('Callback error:', error.message);
       }
     }
 
