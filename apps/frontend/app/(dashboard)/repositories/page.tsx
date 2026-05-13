@@ -41,7 +41,7 @@ export default function RepositoriesPage() {
             code reviews.
           </p>
           <a
-            href="https://github.com/apps/your-app-name/installations/new"
+            href={`https://github.com/apps/${process.env.NEXT_PUBLIC_GITHUB_APP_NAME}/installations/new`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 font-medium text-sm"

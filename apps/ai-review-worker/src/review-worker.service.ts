@@ -29,15 +29,7 @@ export class ReviewWorkerService {
     this.logger.log(`Processing review for PR #${dto.prNumber} in ${dto.repoFullName}`);
 
     const review = await this.reviewRepository.findOne({
-      where: {
-        pullRequest: {
-          prNumber: dto.prNumber,
-          repository: { fullName: dto.repoFullName },
-        },
-        status: ReviewStatus.PENDING,
-      },
-      relations: ['pullRequest', 'pullRequest.repository'],
-      order: { createdAt: 'DESC' },
+      where: { id: dto.reviewId },
     });
 
     if (!review) {
