@@ -11,6 +11,7 @@ import {
 } from '@app/shared';
 import { ClaudeService } from './services/claude.service';
 import { GithubService } from './services/github.service';
+import { ReviewCommentDto } from '@app/shared';
 
 @Injectable()
 export class ReviewWorkerService {
@@ -26,7 +27,9 @@ export class ReviewWorkerService {
   ) {}
 
   async processReview(dto: ReviewRequestedDto): Promise<ReviewCompletedDto> {
-    this.logger.log(`Processing review for PR #${dto.prNumber} in ${dto.repoFullName}`);
+    this.logger.log(
+      `Processing review for PR #${dto.prNumber} in ${dto.repoFullName}`,
+    );
 
     const review = await this.reviewRepository.findOne({
       where: { id: dto.reviewId },
@@ -71,6 +74,13 @@ export class ReviewWorkerService {
       review.processingCompletedAt = new Date();
       await this.reviewRepository.save(review);
 
+      const commentBody = this.formatReviewComment(summary, comments);
+      await this.githubService.postReviewComment(
+        dto.repoFullName,
+        dto.prNumber,
+        dto.installationId,
+        commentBody,
+      );
       this.logger.log(`Review completed for PR #${dto.prNumber}`);
 
       return {
@@ -86,5 +96,34 @@ export class ReviewWorkerService {
       await this.reviewRepository.save(review);
       throw error;
     }
+  }
+
+  private formatReviewComment(
+    summary: string,
+    comments: ReviewCommentDto[],
+  ): string {
+    const severityEmoji = {
+      error: '🔴',
+      warning: '🟡',
+      info: '🔵',
+    };
+
+    const commentLines = comments
+      .map(
+        (c) =>
+          `${severityEmoji[c.severity] || '🔵'} **${c.filePath}:${c.line}** — ${c.body}`,
+      )
+      .join('\n');
+
+    return `## AI Code Review
+  
+  ${summary}
+  
+  ---
+  
+  ${commentLines.length > 0 ? `### Comments\n\n${commentLines}` : '### No issues found'}
+  
+  ---
+  *Reviewed by AI Code Review Bot*`;
   }
 }
