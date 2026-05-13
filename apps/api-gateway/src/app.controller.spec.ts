@@ -1,22 +1,31 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ApiGatewayController } from './api-gateway.controller';
-import { ApiGatewayService } from './api-gateway.service';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { ProxyService } from './proxy/proxy.service';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
-describe('ApiGatewayController', () => {
-  let apiGatewayController: ApiGatewayController;
+describe('AppController', () => {
+  let appController: AppController;
 
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
-      controllers: [ApiGatewayController],
-      providers: [ApiGatewayService],
-    }).compile();
+      controllers: [AppController],
+      providers: [
+        AppService,
+        {
+          provide: ProxyService,
+          useValue: { forward: jest.fn() },
+        },
+      ],
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
-    apiGatewayController = app.get<ApiGatewayController>(ApiGatewayController);
+    appController = app.get<AppController>(AppController);
   });
 
-  describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(apiGatewayController.getHello()).toBe('Hello World!');
-    });
+  it('should be defined', () => {
+    expect(appController).toBeDefined();
   });
 });

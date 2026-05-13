@@ -5,7 +5,6 @@ import {
     CreateDateColumn,
     UpdateDateColumn,
     ManyToOne,
-    OneToMany,
     JoinColumn,
   } from 'typeorm';
   import { PullRequestEntity } from './pull-request.entity';

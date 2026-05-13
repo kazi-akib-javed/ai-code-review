@@ -7,7 +7,6 @@ import {
   ReviewEntity,
   ReviewCommentEntity,
   ReviewStatus,
-  PrStatus,
 } from '@app/shared';
 import { NotFoundException } from '@nestjs/common';
 

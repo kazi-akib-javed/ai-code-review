@@ -7,7 +7,6 @@ import {
   ReviewStatus,
   ReviewRequestedDto,
   ReviewCompletedDto,
-  RABBITMQ_QUEUES,
 } from '@app/shared';
 import { ClaudeService } from './services/claude.service';
 import { GithubService } from './services/github.service';
@@ -56,7 +55,7 @@ export class ReviewWorkerService {
         dto.repoFullName,
       );
 
-      const savedComments = await Promise.all(
+      await Promise.all(
         comments.map((c) => {
           const comment = this.commentRepository.create({
             filePath: c.filePath,

@@ -21,9 +21,11 @@ const mockClaudeService = {
 
 const mockGithubService = {
   getPullRequestDiff: jest.fn(),
+  postReviewComment: jest.fn(),
 };
 
 const mockReviewRequestedDto = {
+  reviewId: 'review-1',
   prNumber: 1,
   repoFullName: 'testuser/testrepo',
   installationId: '456',
