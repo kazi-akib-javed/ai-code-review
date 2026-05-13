@@ -6,7 +6,6 @@ import {
   PullRequestEntity,
   ReviewEntity,
   ReviewStatus,
-  PrStatus,
 } from '@app/shared';
 
 const mockRepo = {

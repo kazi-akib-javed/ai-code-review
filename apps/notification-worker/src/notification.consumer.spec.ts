@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotificationService } from './notification.service';
 import { ReviewGateway } from './gateways/review.gateway';
-import { ReviewStatus } from '@app/shared';
 
 const mockReviewGateway = {
   emitReviewCompleted: jest.fn(),

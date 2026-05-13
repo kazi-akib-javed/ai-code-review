@@ -7,7 +7,6 @@ import {
   ReviewStatus,
   ReviewRequestedDto,
   ReviewCompletedDto,
-  RABBITMQ_QUEUES,
 } from '@app/shared';
 import { ClaudeService } from './services/claude.service';
 import { GithubService } from './services/github.service';
