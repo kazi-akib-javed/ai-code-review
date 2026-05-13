@@ -176,4 +176,4 @@ Deployment via SSH on push to `main`.
 | v0.4.0 | Full end-to-end pipeline with GitHub bot comments |
 | v0.3.0 | Next.js frontend with real-time Socket.io |
 | v0.2.0 | API gateway, Swagger, Prometheus metrics |
-| v0.1.0 | Backend services complete |
+| v0.1.0 | Backend services complete |# test
