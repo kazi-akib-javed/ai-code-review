@@ -1,9 +1,17 @@
-import { Controller, Post, Body, Res, Req, HttpCode } from '@nestjs/common';
-import { Response } from 'express';
+import {
+  Controller,
+  Post,
+  Body,
+  Res,
+  Req,
+  HttpCode,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { Response, Request } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { AuthenticatedRequest } from '@app/shared';
+import { JwtPayload } from '@app/shared';
 
 @Controller('auth')
 export class AuthController {
@@ -26,15 +34,39 @@ export class AuthController {
 
   @Post('refresh')
   @HttpCode(200)
-  async refresh(@Req() req: AuthenticatedRequest, @Res() res: Response) {
-    const tokens = await this.authService.refreshTokens(req.user.sub);
+  async refresh(@Req() req: Request, @Res() res: Response) {
+    const refreshToken = req.cookies?.refresh_token;
+
+    if (!refreshToken) {
+      throw new UnauthorizedException('No refresh token provided');
+    }
+
+    const payload = this.extractRefreshPayload(refreshToken);
+
+    if (!payload) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    const tokens = await this.authService.refreshTokens(
+      payload.sub,
+      refreshToken,
+    );
     this.setRefreshTokenCookie(res, tokens.refreshToken);
     return res.json({ accessToken: tokens.accessToken });
   }
 
   @Post('logout')
   @HttpCode(200)
-  logout(@Res() res: Response) {
+  async logout(@Req() req: Request, @Res() res: Response) {
+    const refreshToken = req.cookies?.refresh_token;
+
+    if (refreshToken) {
+      const payload = this.extractRefreshPayload(refreshToken);
+      if (payload) {
+        await this.authService.logout(payload.sub);
+      }
+    }
+
     res.clearCookie('refresh_token');
     return res.json({ message: 'Logged out successfully' });
   }
@@ -46,5 +78,18 @@ export class AuthController {
       sameSite: 'strict',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
+  }
+
+  private extractRefreshPayload(token: string): JwtPayload | null {
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) return null;
+      const payload = JSON.parse(
+        Buffer.from(parts[1], 'base64url').toString('utf8'),
+      );
+      return payload as JwtPayload;
+    } catch {
+      return null;
+    }
   }
 }

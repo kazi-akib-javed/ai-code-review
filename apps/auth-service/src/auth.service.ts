@@ -8,9 +8,10 @@ import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
-import { UserEntity } from '@app/shared';
+import { UserEntity, JwtPayload } from '@app/shared';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { TokenService } from './token.service';
 
 @Injectable()
 export class AuthService {
@@ -19,6 +20,7 @@ export class AuthService {
     private readonly userRepository: Repository<UserEntity>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly tokenService: TokenService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -39,7 +41,7 @@ export class AuthService {
 
     await this.userRepository.save(user);
 
-    return this.generateTokens(user);
+    return this.generateAndStoreTokens(user);
   }
 
   async login(dto: LoginDto) {
@@ -57,10 +59,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    return this.generateTokens(user);
+    return this.generateAndStoreTokens(user);
   }
 
-  async refreshTokens(userId: string) {
+  async refreshTokens(userId: string, refreshToken: string) {
     const user = await this.userRepository.findOne({
       where: { id: userId },
     });
@@ -69,11 +71,24 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    return this.generateTokens(user);
+    const isValid = await this.tokenService.validateRefreshToken(
+      userId,
+      refreshToken,
+    );
+
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    return this.generateAndStoreTokens(user);
   }
 
-  private generateTokens(user: UserEntity) {
-    const payload = { sub: user.id, email: user.email };
+  async logout(userId: string): Promise<void> {
+    await this.tokenService.revokeRefreshToken(userId);
+  }
+
+  private async generateAndStoreTokens(user: UserEntity) {
+    const payload: JwtPayload = { sub: user.id, email: user.email };
 
     const accessToken = this.jwtService.sign(payload, {
       secret: this.configService.get('JWT_ACCESS_SECRET'),
@@ -84,6 +99,8 @@ export class AuthService {
       secret: this.configService.get('JWT_REFRESH_SECRET'),
       expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN'),
     });
+
+    await this.tokenService.storeRefreshToken(user.id, refreshToken);
 
     return { accessToken, refreshToken, userId: user.id };
   }
