@@ -9,7 +9,6 @@ export class ProxyService {
   private readonly services: Record<string, string>;
 
   constructor(private readonly configService: ConfigService) {
-    console.log('INTERNAL_SECRET:', this.configService.get('INTERNAL_SERVICE_SECRET'));
     this.services = {
       auth: `http://localhost:${configService.get('AUTH_SERVICE_PORT') || 3001}`,
       webhook: `http://localhost:${configService.get('WEBHOOK_SERVICE_PORT') || 3002}`,

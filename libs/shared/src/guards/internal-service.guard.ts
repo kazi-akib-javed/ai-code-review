@@ -21,7 +21,7 @@ export class InternalServiceGuard implements CanActivate {
 
     if (!secret || secret !== this.internalSecret) {
       throw new ForbiddenException(
-        'Direct access to internal service not allowed',
+        'Requests must be routed through the API gateway',
       );
     }
 
