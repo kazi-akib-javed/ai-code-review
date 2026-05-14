@@ -10,7 +10,7 @@ export class GroqAIService implements IAIReviewService {
 
   constructor(private readonly configService: ConfigService) {
     this.client = new Groq({
-      apiKey: this.configService.get<string>('CLAUDE_API_KEY'),
+      apiKey: this.configService.get<string>('GROQ_API_KEY'),
     });
   }
 
