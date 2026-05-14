@@ -24,7 +24,7 @@ import { UserEntity } from '@app/shared';
         password: config.get('DB_PASSWORD'),
         database: config.get('DB_NAME'),
         entities: [UserEntity],
-        synchronize: process.env.NODE_ENV !== 'production',
+        synchronize: config.get('NODE_ENV') !== 'production',
       }),
       inject: [ConfigService],
     }),

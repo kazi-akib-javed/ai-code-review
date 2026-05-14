@@ -20,11 +20,12 @@ import {
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { ProxyService } from './proxy/proxy.service';
+import { ConfigService } from '@nestjs/config';
 
 @Controller()
 @ApiTags('Auth')
 export class AppController {
-  constructor(private readonly proxyService: ProxyService) {}
+  constructor(private readonly proxyService: ProxyService,private readonly configService: ConfigService) {}
 
   @Post('auth/register')
   @ApiOperation({ summary: 'Register a new user' })
@@ -103,7 +104,7 @@ export class AppController {
   async githubCallback(@Req() req: Request, @Res() res: Response) {
     const url = new URL(
       req.url,
-      `http://localhost:${process.env.API_GATEWAY_PORT || 3000}`,
+      `http://localhost:${this.configService.get<string>('API_GATEWAY_PORT') || 3000}`,
     );
     const installationId = url.searchParams.get('installation_id');
     const setupAction = url.searchParams.get('setup_action');
@@ -112,7 +113,7 @@ export class AppController {
     if (installationId && userId && setupAction === 'install') {
       try {
         const resp = await fetch(
-          `http://localhost:${process.env.WEBHOOK_SERVICE_PORT || 3002}/api/v1/github/callback?installation_id=${installationId}&setup_action=${setupAction}`,
+          `http://localhost:${this.configService.get<string>('WEBHOOK_SERVICE_PORT') || 3002}/api/v1/github/callback?installation_id=${installationId}&setup_action=${setupAction}`,
           {
             headers: { 'x-user-id': userId },
           },
@@ -125,7 +126,7 @@ export class AppController {
     }
 
     return res.redirect(
-      `${process.env.FRONTEND_URL || 'http://localhost:3006'}/repositories`,
+      `${this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3006'}/repositories`,
     );
   }
 

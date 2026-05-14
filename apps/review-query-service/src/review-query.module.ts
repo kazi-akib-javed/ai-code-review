@@ -11,6 +11,7 @@ import {
   ReviewCommentEntity,
 } from '@app/shared';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
+import { InternalServiceGuard, INTERNAL_SECRET_TOKEN } from '@app/shared';
 
 @Module({
   imports: [
@@ -31,7 +32,7 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
           ReviewEntity,
           ReviewCommentEntity,
         ],
-        synchronize: process.env.NODE_ENV !== 'production',
+        synchronize: config.get('NODE_ENV') !== 'production',
       }),
       inject: [ConfigService],
     }),
@@ -47,6 +48,15 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
     }),
   ],
   controllers: [ReviewQueryController],
-  providers: [ReviewQueryService],
+  providers: [
+    ReviewQueryService,
+    {
+      provide: INTERNAL_SECRET_TOKEN,
+      useFactory: (config: ConfigService) =>
+        config.get('INTERNAL_SERVICE_SECRET') || '',
+      inject: [ConfigService],
+    },
+    InternalServiceGuard,
+  ],
 })
 export class ReviewQueryModule {}

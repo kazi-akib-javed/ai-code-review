@@ -38,7 +38,7 @@ import {
           ReviewEntity,
           ReviewCommentEntity,
         ],
-        synchronize: process.env.NODE_ENV !== 'production',
+        synchronize: config.get('NODE_ENV') !== 'production',
       }),
       inject: [ConfigService],
     }),

@@ -5,16 +5,21 @@ import {
     Req,
     Res,
     UnauthorizedException,
+    UseGuards,
   } from '@nestjs/common';
   import { Response, Request } from 'express';
   import { GithubCallbackService } from './github-callback.service';
+import { InternalServiceGuard } from '@app/shared';
+import { ConfigService } from '@nestjs/config';
   
   @Controller('github')
   export class GithubCallbackController {
     constructor(
       private readonly githubCallbackService: GithubCallbackService,
+      private readonly configService: ConfigService,
     ) {}
   
+    @UseGuards(InternalServiceGuard)
     @Get('callback')
     async handleCallback(
       @Query('installation_id') installationId: string,
@@ -36,7 +41,7 @@ import {
       }
   
       const frontendUrl =
-        process.env.GITHUB_APP_CALLBACK_URL?.replace(
+        this.configService.get<string>('GITHUB_APP_CALLBACK_URL')?.replace(
           '/github/callback',
           '/repositories',
         ) || 'http://localhost:3006/repositories';

@@ -7,6 +7,7 @@ import {
   PrStatus,
   PullRequestEntity,
 } from '@app/shared';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class GithubCallbackService {
@@ -19,6 +20,7 @@ export class GithubCallbackService {
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(PullRequestEntity)
     private readonly pullRequestRepository: Repository<PullRequestEntity>,
+    private readonly configService: ConfigService,
   ) {}
 
   async handleInstallation(
@@ -101,8 +103,8 @@ export class GithubCallbackService {
   }
 
   private async getInstallationToken(installationId: string): Promise<string> {
-    const appId = process.env.GITHUB_APP_ID;
-    const privateKey = process.env.GITHUB_APP_PRIVATE_KEY;
+    const appId = this.configService.get<string>('GITHUB_APP_ID');
+    const privateKey = this.configService.get<string>('GITHUB_APP_PRIVATE_KEY');
 
     const jwt = await this.generateAppJwt(appId, privateKey);
 
