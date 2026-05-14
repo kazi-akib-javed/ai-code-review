@@ -2,19 +2,16 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Groq from 'groq-sdk';
 import { ReviewCommentDto } from '@app/shared';
-
-// Currently using Groq API (llama-3.3-70b) as AI provider
-// To switch back to Claude, replace Groq client with Anthropic client
-// and update CLAUDE_API_KEY with Anthropic API key
+import { IAIReviewService } from '@app/shared/interfaces/ai-review.interface';
 
 @Injectable()
-export class ClaudeService {
-  private readonly logger = new Logger(ClaudeService.name);
+export class GroqService implements IAIReviewService {
+  private readonly logger = new Logger(GroqService.name);
   private readonly client: Groq;
 
   constructor(private readonly configService: ConfigService) {
     this.client = new Groq({
-      apiKey: this.configService.get<string>('CLAUDE_API_KEY'),
+      apiKey: this.configService.get<string>('GROQ_API_KEY'),
     });
   }
 

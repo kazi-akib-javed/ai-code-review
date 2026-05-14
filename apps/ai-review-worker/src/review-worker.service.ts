@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
@@ -8,7 +8,7 @@ import {
   ReviewRequestedDto,
   ReviewCompletedDto,
 } from '@app/shared';
-import { ClaudeService } from './services/claude.service';
+import { AI_REVIEW_SERVICE, IAIReviewService } from '@app/shared';
 import { GithubService } from './services/github.service';
 import { ReviewCommentDto } from '@app/shared';
 
@@ -21,7 +21,7 @@ export class ReviewWorkerService {
     private readonly reviewRepository: Repository<ReviewEntity>,
     @InjectRepository(ReviewCommentEntity)
     private readonly commentRepository: Repository<ReviewCommentEntity>,
-    private readonly claudeService: ClaudeService,
+    @Inject(AI_REVIEW_SERVICE) private readonly aiReviewService: IAIReviewService,
     private readonly githubService: GithubService,
   ) {}
 
@@ -49,7 +49,7 @@ export class ReviewWorkerService {
         dto.installationId,
       );
 
-      const { comments, summary } = await this.claudeService.reviewDiff(
+      const { comments, summary } = await this.aiReviewService.reviewDiff(
         diff,
         dto.prTitle,
         dto.repoFullName,

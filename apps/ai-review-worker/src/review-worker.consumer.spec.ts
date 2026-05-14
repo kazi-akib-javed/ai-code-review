@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ReviewWorkerService } from './review-worker.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ReviewEntity, ReviewCommentEntity, ReviewStatus } from '@app/shared';
-import { ClaudeService } from './services/claude.service';
+import { AI_REVIEW_SERVICE } from '@app/shared';
 import { GithubService } from './services/github.service';
 
 const mockReviewRepository = {
@@ -51,7 +51,7 @@ describe('ReviewWorkerService', () => {
           useValue: mockCommentRepository,
         },
         {
-          provide: ClaudeService,
+          provide: AI_REVIEW_SERVICE,
           useValue: mockClaudeService,
         },
         {
