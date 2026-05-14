@@ -9,6 +9,8 @@ export class ClaudeAIService implements IAIReviewService {
   private readonly client: Anthropic;
 
   constructor(private readonly configService: ConfigService) {
+    // TODO: In production, retrieve API key from secrets manager (AWS Secrets Manager / Vault)
+    // rather than environment variables
     this.client = new Anthropic({
       apiKey: this.configService.get<string>('CLAUDE_API_KEY'),
     });
@@ -47,7 +49,11 @@ export class ClaudeAIService implements IAIReviewService {
     }
   }
 
-  private buildPrompt(diff: string, prTitle: string, repoFullName: string): string {
+  private buildPrompt(
+    diff: string,
+    prTitle: string,
+    repoFullName: string,
+  ): string {
     return `You are an expert code reviewer. Review the following git diff and provide actionable feedback.
 
 Repository: ${repoFullName}
