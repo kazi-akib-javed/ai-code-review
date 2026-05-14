@@ -13,7 +13,11 @@ export const INTERNAL_SECRET_TOKEN = 'INTERNAL_SECRET_TOKEN';
 export class InternalServiceGuard implements CanActivate {
   constructor(
     @Inject(INTERNAL_SECRET_TOKEN) private readonly internalSecret: string,
-  ) {}
+  ) {
+    if(!internalSecret) {
+      throw new Error('INTERNAL_SECRET_TOKEN is not configured');
+    }
+  }
 
   canActivate(context: ExecutionContext): boolean {
     const req = context.switchToHttp().getRequest<Request>();
