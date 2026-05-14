@@ -25,7 +25,10 @@ import { ConfigService } from '@nestjs/config';
 @Controller()
 @ApiTags('Auth')
 export class AppController {
-  constructor(private readonly proxyService: ProxyService,private readonly configService: ConfigService) {}
+  constructor(
+    private readonly proxyService: ProxyService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @Post('auth/register')
   @ApiOperation({ summary: 'Register a new user' })
@@ -115,7 +118,11 @@ export class AppController {
         const resp = await fetch(
           `http://localhost:${this.configService.get<string>('WEBHOOK_SERVICE_PORT') || 3002}/api/v1/github/callback?installation_id=${installationId}&setup_action=${setupAction}`,
           {
-            headers: { 'x-user-id': userId },
+            headers: {
+              'x-user-id': userId,
+              'x-internal-secret':
+                this.configService.get('INTERNAL_SERVICE_SECRET') || '',
+            },
           },
         );
         const text = await resp.text();
