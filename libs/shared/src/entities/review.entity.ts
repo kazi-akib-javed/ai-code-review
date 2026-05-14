@@ -4,8 +4,11 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { ReviewStatus } from '../enums';
+import { PullRequestEntity } from './pull-request.entity';
 
 @Entity('reviews')
 export class ReviewEntity {
@@ -28,8 +31,9 @@ export class ReviewEntity {
   @Column({ nullable: true })
   processingCompletedAt: Date;
 
-  @Column()
-  pullRequestId: string;
+  @ManyToOne(() => PullRequestEntity, (pr) => pr.id)
+  @JoinColumn({ name: 'pullRequestId' })
+  pullRequest: PullRequestEntity;
 
   @CreateDateColumn()
   createdAt: Date;

@@ -48,7 +48,7 @@ export class WebhookService {
     let pullRequest = await this.pullRequestRepository.findOne({
       where: {
         prNumber: dto.number,
-        repositoryId: repo.id,
+        repository: { id: repo.id },
       },
     });
 
@@ -70,7 +70,7 @@ export class WebhookService {
         headSha: dto.pull_request.head.sha,
         baseSha: dto.pull_request.base.sha,
         status: PrStatus.OPEN,
-        repositoryId: repo.id,
+        repository: { id: repo.id },
       });
       await this.pullRequestRepository.save(pullRequest);
     } else {
@@ -82,7 +82,7 @@ export class WebhookService {
 
     const review = this.reviewRepository.create({
       status: ReviewStatus.PENDING,
-      pullRequestId: pullRequest.id,
+      pullRequest: { id: pullRequest.id },
     });
     await this.reviewRepository.save(review);
 

@@ -23,14 +23,14 @@ export class ReviewQueryService {
 
   async getRepositories(userId: string) {
     return this.repositoryRepository.find({
-      where: { userId, isActive: true },
+      where: { user: { id: userId }, isActive: true },
       order: { createdAt: 'DESC' },
     });
   }
 
   async getPullRequests(repositoryId: string, userId: string) {
     const repo = await this.repositoryRepository.findOne({
-      where: { id: repositoryId, userId },
+      where: { id: repositoryId, user: { id: userId } },
     });
 
     if (!repo) {
@@ -38,7 +38,7 @@ export class ReviewQueryService {
     }
 
     return this.pullRequestRepository.find({
-      where: { repositoryId },
+      where: { repository: { id: repositoryId } },
       order: { createdAt: 'DESC' },
       take: 20,
     });
@@ -46,7 +46,7 @@ export class ReviewQueryService {
 
   async getReview(prId: string) {
     const review = await this.reviewRepository.findOne({
-      where: { pullRequestId: prId },
+      where: { pullRequest: { id: prId } },
       order: { createdAt: 'DESC' },
     });
 
@@ -55,7 +55,7 @@ export class ReviewQueryService {
     }
 
     const comments = await this.commentRepository.find({
-      where: { reviewId: review.id },
+      where: { review: { id: review.id } },
       order: { filePath: 'ASC', line: 'ASC' },
     });
 
@@ -64,7 +64,7 @@ export class ReviewQueryService {
 
   async getRepositoryStats(repositoryId: string, userId: string) {
     const repo = await this.repositoryRepository.findOne({
-      where: { id: repositoryId, userId },
+      where: { id: repositoryId, user: { id: userId } },
     });
 
     if (!repo) {
@@ -72,7 +72,7 @@ export class ReviewQueryService {
     }
 
     const pullRequests = await this.pullRequestRepository.find({
-      where: { repositoryId },
+      where: { repository: { id: repositoryId } },
       select: ['id'],
     });
 
@@ -97,7 +97,7 @@ export class ReviewQueryService {
       .innerJoin(
         'reviews',
         'review',
-        'review.id::text = comment."reviewId" AND review."pullRequestId" IN (:...prIds)',
+        'review.id = comment."reviewId" AND review."pullRequestId" IN (:...prIds)',
         { prIds },
       )
       .getCount();
@@ -107,7 +107,7 @@ export class ReviewQueryService {
       .innerJoin(
         'reviews',
         'review',
-        'review.id::text = comment."reviewId" AND review."pullRequestId" IN (:...prIds)',
+        'review.id = comment."reviewId" AND review."pullRequestId" IN (:...prIds)',
         { prIds },
       )
       .select('comment.severity', 'severity')

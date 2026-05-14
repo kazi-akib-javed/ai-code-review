@@ -4,7 +4,10 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { UserEntity } from './user.entity';
 
 @Entity('repositories')
 export class RepositoryEntity {
@@ -23,8 +26,9 @@ export class RepositoryEntity {
   @Column()
   installationId: string;
 
-  @Column()
-  userId: string;
+  @ManyToOne(() => UserEntity, (user) => user.id)
+  @JoinColumn({ name: 'userId' })
+  user: UserEntity;
 
   @CreateDateColumn()
   createdAt: Date;

@@ -4,8 +4,11 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { PrStatus } from '../enums';
+import { RepositoryEntity } from './repository.entity';
 
 @Entity('pull_requests')
 export class PullRequestEntity {
@@ -34,8 +37,9 @@ export class PullRequestEntity {
   })
   status: PrStatus;
 
-  @Column()
-  repositoryId: string;
+  @ManyToOne(() => RepositoryEntity, (repository) => repository.id)
+  @JoinColumn({ name: 'repositoryId' })
+  repository: RepositoryEntity;
 
   @CreateDateColumn()
   createdAt: Date;
