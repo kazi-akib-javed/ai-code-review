@@ -31,6 +31,7 @@ export class ProxyService {
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
+      'x-internal-secret': this.configService.get('INTERNAL_SERVICE_SECRET') || '',
     };
 
     if (req) {

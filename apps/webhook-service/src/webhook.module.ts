@@ -1,12 +1,14 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { WebhookController } from './webhook.controller';
 import { WebhookService } from './webhook.service';
 import { GithubCallbackController } from './github-callback.controller';
 import { GithubCallbackService } from './github-callback.service';
+import { InternalServiceGuard, INTERNAL_SECRET_TOKEN } from '@app/shared';
 import {
   UserEntity,
   RepositoryEntity,
@@ -14,6 +16,7 @@ import {
   ReviewEntity,
   RABBITMQ_QUEUES,
 } from '@app/shared';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -27,8 +30,13 @@ import {
         username: config.get('DB_USERNAME'),
         password: config.get('DB_PASSWORD'),
         database: config.get('DB_NAME'),
-        entities: [UserEntity, RepositoryEntity, PullRequestEntity, ReviewEntity],
-        synchronize: process.env.NODE_ENV !== 'production',
+        entities: [
+          UserEntity,
+          RepositoryEntity,
+          PullRequestEntity,
+          ReviewEntity,
+        ],
+        synchronize: config.get('NODE_ENV') !== 'production',
       }),
       inject: [ConfigService],
     }),
@@ -37,6 +45,12 @@ import {
       RepositoryEntity,
       PullRequestEntity,
       ReviewEntity,
+    ]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 30,
+      },
     ]),
     ClientsModule.registerAsync([
       {
@@ -59,6 +73,17 @@ import {
     }),
   ],
   controllers: [WebhookController, GithubCallbackController],
-  providers: [WebhookService, GithubCallbackService],
+  providers: [
+    WebhookService,
+    GithubCallbackService,
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    {
+      provide: INTERNAL_SECRET_TOKEN,
+      useFactory: (config: ConfigService) =>
+        config.get('INTERNAL_SERVICE_SECRET') || '',
+      inject: [ConfigService],
+    },
+    InternalServiceGuard,
+  ],
 })
 export class WebhookModule {}
