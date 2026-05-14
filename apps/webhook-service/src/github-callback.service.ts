@@ -62,7 +62,7 @@ export class GithubCallbackService {
           githubRepoId: repo.id.toString(),
           isActive: true,
           installationId,
-          userId,
+          user: { id: userId },
         });
         await this.repositoryRepository.save(repoEntity);
         this.logger.log(`Registered repository: ${repo.full_name}`);
@@ -186,7 +186,7 @@ export class GithubCallbackService {
 
       for (const pr of prs) {
         const existing = await this.pullRequestRepository.findOne({
-          where: { prNumber: pr.number, repositoryId },
+          where: { prNumber: pr.number, repository: { id: repositoryId } },
         });
 
         if (!existing) {
@@ -197,7 +197,7 @@ export class GithubCallbackService {
             headSha: pr.head.sha,
             baseSha: pr.base.sha,
             status: PrStatus.OPEN,
-            repositoryId,
+            repository: { id: repositoryId },
           });
           await this.pullRequestRepository.save(newPr);
           this.logger.log(`Backfilled PR #${pr.number}: ${pr.title}`);

@@ -29,40 +29,53 @@ export class ProxyService {
     const url = `${this.services[service]}/api/v1/${path}`;
     this.logger.log(`Forwarding ${method} ${url}`);
 
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'x-internal-secret': this.configService.get('INTERNAL_SERVICE_SECRET') || '',
-    };
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'x-internal-secret':
+          this.configService.get('INTERNAL_SERVICE_SECRET') || '',
+      };
 
-    if (req) {
-      if (req.headers.authorization) {
-        headers['authorization'] = req.headers.authorization;
+      if (req) {
+        if (req.headers.authorization) {
+          headers['authorization'] = req.headers.authorization;
+        }
+        if (req.headers.cookie) {
+          headers['cookie'] = req.headers.cookie;
+        }
+        const user = req['user'] as JwtPayload;
+        if (user?.sub) {
+          headers['x-user-id'] = user.sub;
+        }
       }
-      if (req.headers.cookie) {
-        headers['cookie'] = req.headers.cookie;
+
+      if (extraHeaders) {
+        Object.assign(headers, extraHeaders);
       }
-      const user = req?.['user'] as JwtPayload;
-      if (user['sub']) {
-        headers['x-user-id'] = user['sub'];
+
+      const response = await fetch(url, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        this.logger.warn(
+          `Service ${service} returned ${response.status} for ${method} ${url}`,
+        );
+        throw new HttpException(data, response.status);
       }
+
+      return data;
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      this.logger.error(`Failed to forward ${method} ${url}: ${error.message}`);
+      throw new HttpException(
+        { message: 'Service unavailable', error: 'Bad Gateway' },
+        502,
+      );
     }
-
-    if (extraHeaders) {
-      Object.assign(headers, extraHeaders);
-    }
-
-    const response = await fetch(url, {
-      method,
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new HttpException(data, response.status);
-    }
-
-    return data;
   }
 }

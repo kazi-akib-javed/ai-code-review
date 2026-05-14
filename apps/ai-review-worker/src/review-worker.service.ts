@@ -62,7 +62,7 @@ export class ReviewWorkerService {
             line: c.line,
             body: c.body,
             severity: c.severity,
-            reviewId: review.id,
+            review: { id: review.id },
           });
           return this.commentRepository.save(comment);
         }),

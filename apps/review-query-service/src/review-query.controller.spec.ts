@@ -71,7 +71,7 @@ describe('ReviewQueryService', () => {
 
       expect(result).toEqual(mockRepos);
       expect(mockRepositoryRepo.find).toHaveBeenCalledWith({
-        where: { userId: 'user-1', isActive: true },
+        where: { user: { id: 'user-1' }, isActive: true },
         order: { createdAt: 'DESC' },
       });
     });
