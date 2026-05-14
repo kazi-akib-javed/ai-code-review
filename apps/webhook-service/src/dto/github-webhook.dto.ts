@@ -13,6 +13,7 @@ export class GithubPullRequestWebhookDto {
     head: { sha: string };
     base: { sha: string };
     user: { login: string };
+    merged?: boolean;
   };
 
   @IsObject()
