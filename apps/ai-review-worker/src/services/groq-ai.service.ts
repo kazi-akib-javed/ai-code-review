@@ -1,20 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Groq from 'groq-sdk';
-import { ReviewCommentDto } from '@app/shared';
-
-// Currently using Groq API (llama-3.3-70b) as AI provider
-// To switch back to Claude, replace Groq client with Anthropic client
-// and update CLAUDE_API_KEY with Anthropic API key
+import { ReviewCommentDto, IAIReviewService } from '@app/shared';
 
 @Injectable()
-export class ClaudeService {
-  private readonly logger = new Logger(ClaudeService.name);
+export class GroqAIService implements IAIReviewService {
+  private readonly logger = new Logger(GroqAIService.name);
   private readonly client: Groq;
 
   constructor(private readonly configService: ConfigService) {
     this.client = new Groq({
-      apiKey: this.configService.get<string>('CLAUDE_API_KEY'),
+      apiKey: this.configService.get<string>('GROQ_API_KEY'),
     });
   }
 
@@ -25,7 +21,35 @@ export class ClaudeService {
   ): Promise<{ comments: ReviewCommentDto[]; summary: string }> {
     this.logger.log(`Sending diff to Groq for review: ${repoFullName}`);
 
-    const prompt = `You are an expert code reviewer. Review the following git diff and provide actionable feedback.
+    const prompt = this.buildPrompt(diff, prTitle, repoFullName);
+
+    const response = await this.client.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      max_tokens: 2000,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    const content = response.choices[0]?.message?.content;
+
+    if (!content) {
+      throw new Error('Empty response from Groq');
+    }
+
+    try {
+      const clean = content.replace(/```json|```/g, '').trim();
+      const parsed = JSON.parse(clean);
+      return {
+        summary: parsed.summary,
+        comments: parsed.comments,
+      };
+    } catch {
+      this.logger.error('Failed to parse Groq response', content);
+      throw new Error('Failed to parse review response');
+    }
+  }
+
+  private buildPrompt(diff: string, prTitle: string, repoFullName: string): string {
+    return `You are an expert code reviewer. Review the following git diff and provide actionable feedback.
 
 Repository: ${repoFullName}
 PR Title: ${prTitle}
@@ -55,29 +79,5 @@ Rules:
 - Only comment on lines present in the diff (+ lines)
 - Maximum 10 comments
 - Be specific and actionable`;
-
-    const response = await this.client.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
-      max_tokens: 2000,
-      messages: [{ role: 'user', content: prompt }],
-    });
-
-    const content = response.choices[0]?.message?.content;
-
-    if (!content) {
-      throw new Error('Empty response from Groq');
-    }
-
-    try {
-      const clean = content.replace(/```json|```/g, '').trim();
-      const parsed = JSON.parse(clean);
-      return {
-        summary: parsed.summary,
-        comments: parsed.comments,
-      };
-    } catch {
-      this.logger.error('Failed to parse Groq response', content);
-      throw new Error('Failed to parse review response');
-    }
   }
 }
