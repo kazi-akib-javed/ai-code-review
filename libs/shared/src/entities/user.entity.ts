@@ -17,12 +17,6 @@ export class UserEntity {
   @Column()
   password: string;
 
-  @Column({ nullable: true })
-  githubUsername: string;
-
-  @Column({ nullable: true })
-  githubInstallationId: string;
-
   @CreateDateColumn()
   createdAt: Date;
 
