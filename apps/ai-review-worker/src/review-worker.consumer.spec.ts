@@ -4,6 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { ReviewEntity, ReviewCommentEntity, ReviewStatus } from '@app/shared';
 import { AI_REVIEW_SERVICE } from '@app/shared';
 import { GithubService } from './services/github.service';
+import { DiffSanitizerService } from './services/diff-sanitizer.service';
 
 const mockReviewRepository = {
   findOne: jest.fn(),
@@ -57,6 +58,12 @@ describe('ReviewWorkerService', () => {
         {
           provide: GithubService,
           useValue: mockGithubService,
+        },
+        {
+          provide: DiffSanitizerService,
+          useValue: {
+            sanitize: jest.fn((diff) => diff),
+          },
         },
       ],
     }).compile();

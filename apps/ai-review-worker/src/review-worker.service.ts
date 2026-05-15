@@ -11,6 +11,7 @@ import {
 import { AI_REVIEW_SERVICE, IAIReviewService } from '@app/shared';
 import { GithubService } from './services/github.service';
 import { ReviewCommentDto } from '@app/shared';
+import { DiffSanitizerService } from './services/diff-sanitizer.service';
 
 @Injectable()
 export class ReviewWorkerService {
@@ -21,8 +22,10 @@ export class ReviewWorkerService {
     private readonly reviewRepository: Repository<ReviewEntity>,
     @InjectRepository(ReviewCommentEntity)
     private readonly commentRepository: Repository<ReviewCommentEntity>,
-    @Inject(AI_REVIEW_SERVICE) private readonly aiReviewService: IAIReviewService,
+    @Inject(AI_REVIEW_SERVICE)
+    private readonly aiReviewService: IAIReviewService,
     private readonly githubService: GithubService,
+    private readonly diffSanitizerService: DiffSanitizerService,
   ) {}
 
   async processReview(dto: ReviewRequestedDto): Promise<ReviewCompletedDto> {
@@ -49,8 +52,10 @@ export class ReviewWorkerService {
         dto.installationId,
       );
 
+      const sanitizedDiff = this.diffSanitizerService.sanitize(diff);
+
       const { comments, summary } = await this.aiReviewService.reviewDiff(
-        diff,
+        sanitizedDiff,
         dto.prTitle,
         dto.repoFullName,
       );
