@@ -24,6 +24,7 @@ const mockPullRequestRepo = {
 const mockReviewRepo = {
   findOne: jest.fn(),
   count: jest.fn(),
+  find: jest.fn(),
 };
 
 const mockCommentRepo = {
@@ -81,9 +82,9 @@ describe('ReviewQueryService', () => {
     it('should throw NotFoundException if repo not found', async () => {
       mockRepositoryRepo.findOne.mockResolvedValue(null);
 
-      await expect(
-        service.getPullRequests('repo-1', 'user-1'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.getPullRequests('repo-1', 'user-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should return pull requests for a repository', async () => {
@@ -119,6 +120,40 @@ describe('ReviewQueryService', () => {
 
       expect(result.id).toBe('review-1');
       expect(result.comments).toHaveLength(1);
+    });
+  });
+
+  describe('getReviews', () => {
+    it('should throw NotFoundException if no reviews found', async () => {
+      mockReviewRepo.find.mockResolvedValue([]);
+
+      await expect(service.getReviews('pr-1')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should return all reviews with comments in order', async () => {
+      mockReviewRepo.find.mockResolvedValue([
+        {
+          id: 'review-1',
+          status: ReviewStatus.COMPLETED,
+          createdAt: new Date('2026-05-14'),
+        },
+        {
+          id: 'review-2',
+          status: ReviewStatus.COMPLETED,
+          createdAt: new Date('2026-05-13'),
+        },
+      ]);
+      mockCommentRepo.find.mockResolvedValue([
+        { id: 'comment-1', filePath: 'src/app.ts', line: 10 },
+      ]);
+
+      const result = await service.getReviews('pr-1');
+
+      expect(result).toHaveLength(2);
+      expect(result[0].comments).toHaveLength(1);
+      expect(mockCommentRepo.find).toHaveBeenCalledTimes(2);
     });
   });
 });

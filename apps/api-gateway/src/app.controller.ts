@@ -222,6 +222,29 @@ export class AppController {
     return res.json(data);
   }
 
+  @Get('pull-requests/:prId/reviews')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiTags('Reviews')
+  @ApiOperation({ summary: 'Get all reviews for a pull request' })
+  @ApiResponse({
+    status: 200,
+    description: 'All reviews with comments in chronological order',
+  })
+  async getReviews(
+    @Param('prId') prId: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    const data = await this.proxyService.forward(
+      'reviewQuery',
+      `pull-requests/${prId}/reviews`,
+      'GET',
+      req,
+    );
+    return res.json(data);
+  }
+
   @Get('repositories/:id/stats')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')

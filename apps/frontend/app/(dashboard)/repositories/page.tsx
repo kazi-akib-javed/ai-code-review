@@ -85,9 +85,20 @@ export default function RepositoriesPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-semibold text-gray-900">{repo.fullName}</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Installation ID: {repo.installationId}
-                  </p>
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
+                      {repo.openPrs} open
+                    </span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">
+                      {repo.mergedPrs} merged
+                    </span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-medium">
+                      {repo.closedPrs} closed
+                    </span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-medium">
+                      {repo.totalPrs} total
+                    </span>
+                  </div>
                 </div>
                 <span
                   className={`text-xs px-2 py-1 rounded-full font-medium ${
