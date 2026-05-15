@@ -9,7 +9,6 @@ import {
   ReviewStatus,
 } from '@app/shared';
 import { NotFoundException } from '@nestjs/common';
-import { count } from 'console';
 
 const mockRepositoryRepo = {
   find: jest.fn(),
