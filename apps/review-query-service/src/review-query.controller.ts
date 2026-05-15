@@ -23,6 +23,11 @@ export class ReviewQueryController {
     return this.reviewQueryService.getReview(prId);
   }
 
+  @Get('pull-requests/:prId/reviews')
+  getReviews(@Param('prId') prId: string) {
+    return this.reviewQueryService.getReviews(prId);
+  }
+
   @Get('repositories/:id/stats')
   getRepositoryStats(@Param('id') id: string, @UserId() userId: string) {
     return this.reviewQueryService.getRepositoryStats(id, userId);

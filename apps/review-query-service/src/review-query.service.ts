@@ -6,6 +6,7 @@ import {
   PullRequestEntity,
   ReviewEntity,
   ReviewCommentEntity,
+  PrStatus,
 } from '@app/shared';
 
 @Injectable()
@@ -22,10 +23,41 @@ export class ReviewQueryService {
   ) {}
 
   async getRepositories(userId: string) {
-    return this.repositoryRepository.find({
+    const repos = await this.repositoryRepository.find({
       where: { user: { id: userId }, isActive: true },
       order: { createdAt: 'DESC' },
     });
+
+    const enriched = await Promise.all(
+      repos.map(async (repo) => {
+
+        const totalPrs = await this.pullRequestRepository.count({
+          where: { repository: { id: repo.id } },
+        });
+
+        const openPrs = await this.pullRequestRepository.count({
+          where: { repository: { id: repo.id }, status: PrStatus.OPEN },
+        });
+
+        const mergedPrs = await this.pullRequestRepository.count({
+          where: { repository: { id: repo.id }, status: PrStatus.MERGED },
+        });
+
+        const closedPrs = await this.pullRequestRepository.count({
+          where: { repository: { id: repo.id }, status: PrStatus.CLOSED },
+        });
+
+        return {
+          ...repo,
+          totalPrs,
+          openPrs,
+          mergedPrs,
+          closedPrs,
+        };
+      }),
+    );
+
+    return enriched;
   }
 
   async getPullRequests(repositoryId: string, userId: string) {
@@ -37,11 +69,36 @@ export class ReviewQueryService {
       throw new NotFoundException('Repository not found');
     }
 
-    return this.pullRequestRepository.find({
+    const pullRequests = await this.pullRequestRepository.find({
       where: { repository: { id: repositoryId } },
       order: { createdAt: 'DESC' },
       take: 20,
     });
+
+    const enriched = await Promise.all(
+      pullRequests.map(async (pr) => {
+        const reviews = await this.reviewRepository.find({
+          where: { pullRequest: { id: pr.id } },
+          order: { createdAt: 'DESC' },
+        });
+
+        const latestReview = reviews[0];
+        const totalComments = latestReview
+          ? await this.commentRepository.count({
+              where: { review: { id: latestReview.id } },
+            })
+          : 0;
+
+        return {
+          ...pr,
+          reviewCount: reviews.length,
+          latestReviewStatus: latestReview?.status ?? null,
+          latestReviewComments: totalComments,
+        };
+      }),
+    );
+
+    return enriched;
   }
 
   async getReview(prId: string) {
@@ -60,6 +117,30 @@ export class ReviewQueryService {
     });
 
     return { ...review, comments };
+  }
+
+  async getReviews(prId: string) {
+    const reviews = await this.reviewRepository.find({
+      where: { pullRequest: { id: prId } },
+      relations: ['pullRequest', 'pullRequest.repository'],
+      order: { createdAt: 'DESC' },
+    });
+
+    if (!reviews.length) {
+      throw new NotFoundException('No reviews found for this pull request');
+    }
+
+    const reviewsWithComments = await Promise.all(
+      reviews.map(async (review) => {
+        const comments = await this.commentRepository.find({
+          where: { review: { id: review.id } },
+          order: { filePath: 'ASC', line: 'ASC' },
+        });
+        return { ...review, comments };
+      }),
+    );
+
+    return reviewsWithComments;
   }
 
   async getRepositoryStats(repositoryId: string, userId: string) {

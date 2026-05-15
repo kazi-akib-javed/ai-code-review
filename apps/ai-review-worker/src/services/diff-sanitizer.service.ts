@@ -21,7 +21,7 @@ export class DiffSanitizerService {
     /output\s+only\s+(json|valid)/gi,
   ];
 
-  private readonly MAX_DIFF_SIZE = 50000;
+  private readonly MAX_DIFF_SIZE = 8000;
 
   sanitize(diff: string): string {
     if (!diff) return '';
