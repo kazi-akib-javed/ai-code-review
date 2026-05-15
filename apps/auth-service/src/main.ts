@@ -1,4 +1,4 @@
-import { NestFactory, NestApplication } from '@nestjs/core';
+import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { AuthModule } from './auth.module';
 import * as cookieParser from 'cookie-parser';
