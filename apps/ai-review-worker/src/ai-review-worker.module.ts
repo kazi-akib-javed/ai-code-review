@@ -20,6 +20,7 @@ import {
   ReviewEntity,
   ReviewCommentEntity,
 } from '@app/shared';
+import { DiffSanitizerService } from './services/diff-sanitizer.service';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import {
   controllers: [ReviewWorkerConsumer],
   providers: [
     ReviewWorkerService,
+    DiffSanitizerService,
     GithubService,
     {
       provide: AI_REVIEW_SERVICE,
