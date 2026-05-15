@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
@@ -8,9 +8,10 @@ import {
   ReviewRequestedDto,
   ReviewCompletedDto,
 } from '@app/shared';
-import { ClaudeService } from './services/claude.service';
+import { AI_REVIEW_SERVICE, IAIReviewService } from '@app/shared';
 import { GithubService } from './services/github.service';
 import { ReviewCommentDto } from '@app/shared';
+import { DiffSanitizerService } from './services/diff-sanitizer.service';
 
 @Injectable()
 export class ReviewWorkerService {
@@ -21,8 +22,10 @@ export class ReviewWorkerService {
     private readonly reviewRepository: Repository<ReviewEntity>,
     @InjectRepository(ReviewCommentEntity)
     private readonly commentRepository: Repository<ReviewCommentEntity>,
-    private readonly claudeService: ClaudeService,
+    @Inject(AI_REVIEW_SERVICE)
+    private readonly aiReviewService: IAIReviewService,
     private readonly githubService: GithubService,
+    private readonly diffSanitizerService: DiffSanitizerService,
   ) {}
 
   async processReview(dto: ReviewRequestedDto): Promise<ReviewCompletedDto> {
@@ -49,8 +52,10 @@ export class ReviewWorkerService {
         dto.installationId,
       );
 
-      const { comments, summary } = await this.claudeService.reviewDiff(
-        diff,
+      const sanitizedDiff = this.diffSanitizerService.sanitize(diff);
+
+      const { comments, summary } = await this.aiReviewService.reviewDiff(
+        sanitizedDiff,
         dto.prTitle,
         dto.repoFullName,
       );
@@ -62,7 +67,7 @@ export class ReviewWorkerService {
             line: c.line,
             body: c.body,
             severity: c.severity,
-            reviewId: review.id,
+            review: { id: review.id },
           });
           return this.commentRepository.save(comment);
         }),

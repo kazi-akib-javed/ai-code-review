@@ -3,6 +3,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ProxyService } from './proxy/proxy.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { ConfigService } from '@nestjs/config';
 
 describe('AppController', () => {
   let appController: AppController;
@@ -15,6 +16,10 @@ describe('AppController', () => {
         {
           provide: ProxyService,
           useValue: { forward: jest.fn() },
+        },
+        {
+          provide: ConfigService,
+          useValue: { get: jest.fn().mockReturnValue('mock-value') },
         },
       ],
     })

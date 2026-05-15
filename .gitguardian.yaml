@@ -1,0 +1,7 @@
+version: 2
+ignore-known-secrets: true
+matches-ignore:
+  - name: "JWT_MIN_LENGTH false positive"
+    match: "JWT_MIN_LENGTH"
+  - name: "MIN_SECRET_LENGTH false positive"  
+    match: "MIN_SECRET_LENGTH"

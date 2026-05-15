@@ -8,9 +8,11 @@ import {
 } from '@willsoto/nestjs-prometheus';
 import { ReviewWorkerConsumer } from './review-worker.consumer';
 import { ReviewWorkerService } from './review-worker.service';
-import { ClaudeService } from './services/claude.service';
+import { ClaudeAIService } from './services/claude-ai.service';
+import { GroqAIService } from './services/groq-ai.service';
 import { GithubService } from './services/github.service';
 import { MetricsController } from './metrics.controller';
+import { AI_REVIEW_SERVICE } from '@app/shared';
 import {
   UserEntity,
   RepositoryEntity,
@@ -18,6 +20,7 @@ import {
   ReviewEntity,
   ReviewCommentEntity,
 } from '@app/shared';
+import { DiffSanitizerService } from './services/diff-sanitizer.service';
 
 @Module({
   imports: [
@@ -38,7 +41,7 @@ import {
           ReviewEntity,
           ReviewCommentEntity,
         ],
-        synchronize: process.env.NODE_ENV !== 'production',
+        synchronize: config.get('NODE_ENV') !== 'production',
       }),
       inject: [ConfigService],
     }),
@@ -50,8 +53,19 @@ import {
   controllers: [ReviewWorkerConsumer],
   providers: [
     ReviewWorkerService,
-    ClaudeService,
+    DiffSanitizerService,
     GithubService,
+    {
+      provide: AI_REVIEW_SERVICE,
+      useFactory: (config: ConfigService) => {
+        const provider = config.get('AI_PROVIDER') || 'claude';
+        if (provider === 'groq') {
+          return new GroqAIService(config);
+        }
+        return new ClaudeAIService(config);
+      },
+      inject: [ConfigService],
+    },
     makeCounterProvider({
       name: 'reviews_processed_total',
       help: 'Total number of reviews processed',
@@ -65,13 +79,13 @@ import {
     }),
     makeCounterProvider({
       name: 'claude_api_calls_total',
-      help: 'Total number of Claude API calls',
-      labelNames: ['status'],
+      help: 'Total number of AI API calls',
+      labelNames: ['status', 'provider'],
     }),
     makeHistogramProvider({
       name: 'claude_api_latency_ms',
-      help: 'Claude API call latency in milliseconds',
-      labelNames: [],
+      help: 'AI API call latency in milliseconds',
+      labelNames: ['provider'],
       buckets: [500, 1000, 2000, 5000, 10000, 20000],
     }),
   ],

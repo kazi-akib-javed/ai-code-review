@@ -1,8 +1,10 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { ReviewQueryService } from './review-query.service';
 import { UserId } from './decorators/user-id.decorator';
+import { InternalServiceGuard } from '@app/shared';
 
 @Controller()
+@UseGuards(InternalServiceGuard)
 export class ReviewQueryController {
   constructor(private readonly reviewQueryService: ReviewQueryService) {}
 

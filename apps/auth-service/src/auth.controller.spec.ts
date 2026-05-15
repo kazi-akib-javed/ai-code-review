@@ -6,6 +6,7 @@ import { ConfigService } from '@nestjs/config';
 import { UserEntity } from '@app/shared';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { TokenService } from './token.service';
 
 const mockUserRepository = {
   findOne: jest.fn(),
@@ -21,6 +22,12 @@ const mockConfigService = {
   get: jest.fn().mockReturnValue('mock-value'),
 };
 
+const mockTokenService = {
+  storeRefreshToken: jest.fn().mockResolvedValue(undefined),
+  validateRefreshToken: jest.fn().mockResolvedValue(true),
+  revokeRefreshToken: jest.fn().mockResolvedValue(undefined),
+};
+
 describe('AuthService', () => {
   let service: AuthService;
 
@@ -34,6 +41,7 @@ describe('AuthService', () => {
         },
         { provide: JwtService, useValue: mockJwtService },
         { provide: ConfigService, useValue: mockConfigService },
+        { provide: TokenService, useValue: mockTokenService },
       ],
     }).compile();
 
@@ -64,6 +72,7 @@ describe('AuthService', () => {
 
       expect(result).toHaveProperty('accessToken');
       expect(result).toHaveProperty('refreshToken');
+      expect(mockTokenService.storeRefreshToken).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -103,6 +112,38 @@ describe('AuthService', () => {
 
       expect(result).toHaveProperty('accessToken');
       expect(result).toHaveProperty('refreshToken');
+      expect(mockTokenService.storeRefreshToken).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('refreshTokens', () => {
+    it('should throw UnauthorizedException if refresh token is invalid', async () => {
+      mockUserRepository.findOne.mockResolvedValue({ id: '1' });
+      mockTokenService.validateRefreshToken.mockResolvedValue(false);
+
+      await expect(
+        service.refreshTokens('1', 'invalid-token'),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should return new tokens on valid refresh token', async () => {
+      mockUserRepository.findOne.mockResolvedValue({
+        id: '1',
+        email: 'test@test.com',
+      });
+      mockTokenService.validateRefreshToken.mockResolvedValue(true);
+
+      const result = await service.refreshTokens('1', 'valid-token');
+
+      expect(result).toHaveProperty('accessToken');
+      expect(result).toHaveProperty('refreshToken');
+    });
+  });
+
+  describe('logout', () => {
+    it('should revoke refresh token on logout', async () => {
+      await service.logout('user-1');
+      expect(mockTokenService.revokeRefreshToken).toHaveBeenCalledWith('user-1');
     });
   });
 });

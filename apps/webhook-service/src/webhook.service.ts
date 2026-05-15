@@ -29,7 +29,7 @@ export class WebhookService {
   ) {}
 
   async handlePullRequestEvent(dto: GithubPullRequestWebhookDto) {
-    const allowedActions = ['opened', 'synchronize', 'reopened'];
+    const allowedActions = ['opened', 'synchronize', 'reopened', 'closed'];
 
     if (!allowedActions.includes(dto.action)) {
       this.logger.log(`Ignoring PR action: ${dto.action}`);
@@ -48,9 +48,19 @@ export class WebhookService {
     let pullRequest = await this.pullRequestRepository.findOne({
       where: {
         prNumber: dto.number,
-        repositoryId: repo.id,
+        repository: { id: repo.id },
       },
     });
+
+    if (dto.action === 'closed') {
+      if (pullRequest) {
+        const isMerged = dto.pull_request['merged'] === true;
+        pullRequest.status = isMerged ? PrStatus.MERGED : PrStatus.CLOSED;
+        await this.pullRequestRepository.save(pullRequest);
+        this.logger.log(`PR #${dto.number} marked as ${pullRequest.status}`);
+      }
+      return { updated: true };
+    }
 
     if (!pullRequest) {
       pullRequest = this.pullRequestRepository.create({
@@ -60,18 +70,19 @@ export class WebhookService {
         headSha: dto.pull_request.head.sha,
         baseSha: dto.pull_request.base.sha,
         status: PrStatus.OPEN,
-        repositoryId: repo.id,
+        repository: { id: repo.id },
       });
       await this.pullRequestRepository.save(pullRequest);
     } else {
       pullRequest.headSha = dto.pull_request.head.sha;
       pullRequest.baseSha = dto.pull_request.base.sha;
+      pullRequest.status = PrStatus.OPEN;
       await this.pullRequestRepository.save(pullRequest);
     }
 
     const review = this.reviewRepository.create({
       status: ReviewStatus.PENDING,
-      pullRequestId: pullRequest.id,
+      pullRequest: { id: pullRequest.id },
     });
     await this.reviewRepository.save(review);
 
@@ -87,7 +98,9 @@ export class WebhookService {
     };
 
     this.rabbitClient.emit(RABBITMQ_QUEUES.REVIEW_REQUESTED, message);
-    this.logger.log(`Review requested for PR #${dto.number} in ${dto.repository.full_name}`);
+    this.logger.log(
+      `Review requested for PR #${dto.number} in ${dto.repository.full_name}`,
+    );
 
     return { reviewId: review.id };
   }
