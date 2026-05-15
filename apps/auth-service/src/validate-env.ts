@@ -1,7 +1,5 @@
 import * as crypto from 'crypto';
 
-const MIN_SECRET_LENGTH = 32;
-
 const REQUIRED_ENV_VARS = [
   'JWT_ACCESS_SECRET',
   'JWT_REFRESH_SECRET',
@@ -25,16 +23,19 @@ export function validateEnv(env: Record<string, string | undefined> = process.en
   const accessSecret = env.JWT_ACCESS_SECRET;
   const refreshSecret = env.JWT_REFRESH_SECRET;
 
-  if (!accessSecret || accessSecret.length < MIN_SECRET_LENGTH) {
+  if (!accessSecret || !isHighEntropy(accessSecret)) {
+    throw new Error('JWT_ACCESS_SECRET does not meet security requirements');
+  }
+
+  if (!refreshSecret || !isHighEntropy(refreshSecret)) {
     throw new Error(
-      `JWT_ACCESS_SECRET must be at least ${MIN_SECRET_LENGTH} characters long`,
+      'JWT_REFRESH_SECRET does not meet security requirements',
     );
   }
 
-  if (!refreshSecret || refreshSecret.length < MIN_SECRET_LENGTH) {
-    throw new Error(
-      `JWT_REFRESH_SECRET must be at least ${MIN_SECRET_LENGTH} characters long`,
-    );
+  function isHighEntropy(secret: string): boolean {
+    const uniqueChars = new Set(secret.split('')).size;
+    return secret.length >= 32 && uniqueChars >= 10;
   }
 
   const accessBuf = Buffer.from(accessSecret);
