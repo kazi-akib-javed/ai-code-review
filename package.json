@@ -101,16 +101,22 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "apps/**/*.ts",
+      "libs/**/*.ts",
+      "!apps/frontend/**",
+      "!**/*.module.ts",
+      "!**/main.ts",
+      "!**/*.spec.ts"
     ],
     "coverageDirectory": "./coverage",
     "testEnvironment": "node",
     "roots": [
-      "<rootDir>/apps/",
-      "<rootDir>/libs/"
+      "<rootDir>/apps",
+      "<rootDir>/libs"
     ],
     "moduleNameMapper": {
-      "^@app/shared(|/.*)$": "<rootDir>/libs/shared/src/$1"
+      "@app/shared/(.*)": "<rootDir>/libs/shared/src/$1",
+      "@app/shared": "<rootDir>/libs/shared/src"
     },
     "testPathIgnorePatterns": [
       "/node_modules/",

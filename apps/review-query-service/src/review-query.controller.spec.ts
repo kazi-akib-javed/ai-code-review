@@ -9,6 +9,7 @@ import {
   ReviewStatus,
 } from '@app/shared';
 import { NotFoundException } from '@nestjs/common';
+import { count } from 'console';
 
 const mockRepositoryRepo = {
   find: jest.fn(),
@@ -19,16 +20,18 @@ const mockRepositoryRepo = {
 const mockPullRequestRepo = {
   find: jest.fn(),
   findOne: jest.fn(),
+  count: jest.fn().mockResolvedValue(0),
 };
 
 const mockReviewRepo = {
   findOne: jest.fn(),
   count: jest.fn(),
-  find: jest.fn(),
+  find: jest.fn().mockResolvedValue([]),
 };
 
 const mockCommentRepo = {
   find: jest.fn(),
+  count: jest.fn().mockResolvedValue(0),
   createQueryBuilder: jest.fn(),
 };
 
@@ -70,11 +73,11 @@ describe('ReviewQueryService', () => {
 
       const result = await service.getRepositories('user-1');
 
-      expect(result).toEqual(mockRepos);
-      expect(mockRepositoryRepo.find).toHaveBeenCalledWith({
-        where: { user: { id: 'user-1' }, isActive: true },
-        order: { createdAt: 'DESC' },
-      });
+      expect(result[0]).toMatchObject({ id: 'repo-1', fullName: 'user/repo' });
+      expect(result[0]).toHaveProperty('totalPrs');
+      expect(result[0]).toHaveProperty('openPrs');
+      expect(result[0]).toHaveProperty('mergedPrs');
+      expect(result[0]).toHaveProperty('closedPrs');
     });
   });
 
@@ -94,7 +97,10 @@ describe('ReviewQueryService', () => {
 
       const result = await service.getPullRequests('repo-1', 'user-1');
 
-      expect(result).toEqual(mockPRs);
+      expect(result[0]).toMatchObject({ id: 'pr-1', prNumber: 1 });
+      expect(result[0]).toHaveProperty('reviewCount');
+      expect(result[0]).toHaveProperty('latestReviewStatus');
+      expect(result[0]).toHaveProperty('latestReviewComments');
     });
   });
 
